@@ -1,5 +1,5 @@
 ﻿clear
-function Get-VariableInteger {
+function Get-MCVariableInteger {
     param([int]$integer)
 
     $dataMask = 0x7F
@@ -22,7 +22,7 @@ function Get-VariableInteger {
     return $data
 }
 
-function Parse-VariableInteger {
+function Parse-MCVariableInteger {
     param([System.IO.Stream]$stream)
 
     $dataMask = 0x7F
@@ -48,7 +48,7 @@ function Parse-VariableInteger {
 }
 
 
-function Create-HandshakePacketData {
+function Create-MCHandshakePacketData {
     param([string]$serverHostname, [uint16]$serverPort)
 
     # packet source: https://wiki.vg/Protocol#Handshake
@@ -76,7 +76,7 @@ function Get-MCServerStatusData {
     $stream = $tcpClient.GetStream()
 
     # Write handshake packet
-    $data = Create-HandshakePacketData $address.ToString() $port
+    $data = Create-MCHandshakePacketData $address.ToString() $port
     $stream.Write($data, 0, $data.Count)
 
     # Write set state packet
@@ -84,10 +84,10 @@ function Get-MCServerStatusData {
     $stream.Flush()
 
     # We dont need the first varint which specifies packet payload size
-    $null = Parse-VariableInteger $stream
+    $null = Parse-MCVariableInteger $stream
     $null = $stream.ReadByte()
     # Parse length varint variable, which specifies packet string length.
-    $length = Parse-VariableInteger $stream
+    $length = Parse-MCVariableInteger $stream
 
     $bytesRead = 0
     # use the retrieve length for the result buffer
@@ -99,6 +99,55 @@ function Get-MCServerStatusData {
     return [System.Text.Encoding]::UTF8.GetString($result)
 }
 
+function Get-MCServerVersion {
+    param([int16]$protocolId)
+
+    $version = switch ($protocolId) {
+        764 { "1.20.2" }
+        763 { "1.20.1" }
+        762 { "1.19.4" }
+        761 { "1.19.3" }
+        760 { "1.19.2" }
+        759 { "1.19" }
+        758 { "1.18.2" }
+        757 { "1.18.1" }
+        756 { "1.17.1" }
+        755 { "1.17" }
+        754 { "1.16.5" }
+        753 { "1.16.3" }
+        751 { "1.16.2" }
+        736 { "1.16.1" }
+        735 { "1.16" }
+        578 { "1.15.2" }
+        575 { "1.15.1" }
+        573 { "1.15" }
+        498 { "1.14.4" }
+        490 { "1.14.3" }
+        485 { "1.14.2" }
+        480 { "1.14.1" }
+        477 { "1.14" }
+        404 { "1.13.2" }
+        401 { "1.13.1" }
+        393 { "1.13" }
+        340 { "1.12.2" }
+        338 { "1.12.1" }
+        335 { "1.12" }
+        316 { "1.11.2" }
+        315 { "1.11" }
+        210 { "1.10.2" }
+        110 { "1.9.4" }
+        109 { "1.9.2" }
+        108 { "1.9.1" }
+        107 { "1.9" }
+        47 { "1.8.9" }
+        5 { "1.7.10" }
+        4 { "1.7.5" }
+        default { "unknown" }
+    }
+
+    return $version
+
+}
 
 function Get-MCServerStatus {
 
@@ -116,17 +165,18 @@ function Get-MCServerStatus {
 
     Begin {
         "Minecraft server status"
-        Write-Host "`nSERVER DETAILS" -BackgroundColor Gray -ForegroundColor White
-        "Server hostname or ip: $($address)"
-        "Server port: $($port)"
+        Write-Host "`n SERVER CONNECTION DETAILS: " -BackgroundColor White -ForegroundColor Black
+        " - Server hostname or ip: $($address)"
+        " - Server port: $($port)"
     }
 
     Process {
         $status = ConvertFrom-Json (Get-MCServerStatusData $address $port)
+        $version = Get-MCServerVersion $status.version.protocol
 
-        Write-Host "`nSERVER IS ONLINE" -BackgroundColor Green -ForegroundColor White
-        "Server online players: $($status.players.online)/$($status.players.max)"
-        "Server protocol: $($status.version.protocol)"
-        "Server name: $($status.version.name)"
+        Write-Host "`n SERVER IS ONLINE: " -BackgroundColor Green -ForegroundColor Black
+        " - Server online players: $($status.players.online)/$($status.players.max)"
+        " - Server version: $($version) (protocol id: $($status.version.protocol))"
+        " - Server software name: '$($status.version.name)'"
     }
 }
