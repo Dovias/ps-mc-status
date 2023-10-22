@@ -164,19 +164,37 @@ function Get-MCServerStatus {
     )
 
     Begin {
-        "Minecraft server status"
+        "`nMinecraft server status checker"
+        "https://github.com/Dovias/ps-mc-status/tree/main"
+
         Write-Host "`n SERVER CONNECTION DETAILS: " -BackgroundColor White -ForegroundColor Black
         " - Server hostname or ip: $($address)"
         " - Server port: $($port)"
     }
 
     Process {
-        $status = ConvertFrom-Json (Get-MCServerStatusData $address $port)
-        $version = Get-MCServerVersion $status.version.protocol
+        try {
+            $status = ConvertFrom-Json (Get-MCServerStatusData $address $port)
+
+        } catch [System.Net.Sockets.SocketException] {
+            Write-Host "`n FAILED TO ESTABLISH CONNECTION WITH THE SERVER! `n" -BackgroundColor Red -ForegroundColor White
+            return
+        }
+        $protocolId = $status.version.protocol
+        $version = Get-MCServerVersion $protocolId
 
         Write-Host "`n SERVER IS ONLINE: " -BackgroundColor Green -ForegroundColor Black
-        " - Server online players: $($status.players.online)/$($status.players.max)"
-        " - Server version: $($version) (protocol id: $($status.version.protocol))"
-        " - Server software name: '$($status.version.name)'"
+        Write-Host " - Server online players: " -ForegroundColor White -NoNewline
+        Write-Host "$($status.players.online)/$($status.players.max)" -ForegroundColor Green
+        Write-Host " - Server version: " -ForegroundColor White -NoNewLine
+        Write-Host "$($version) (protocol id: $($protocolId))" -ForegroundColor Green
+        Write-Host " - Server software name: " -ForegroundColor White -NoNewLine
+        Write-Host "'$($status.version.name)'" -ForegroundColor Green
+
+        if (($version -eq "unknown") -or ($status.version.name -match "§")) {
+            Write-Host "`n SERVER METADATA SEEMS TO BE MODIFIED!" -BackgroundColor Yellow -ForegroundColor Black
+        }
+        "`n"
+
     }
 }
