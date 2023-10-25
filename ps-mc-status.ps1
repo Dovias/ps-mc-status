@@ -250,6 +250,81 @@ function Get-MCServerVersion {
     }
 }
 
+
+
+<#
+.SYNOPSIS
+    Retrieves icon of the Minecraft server
+
+.DESCRIPTION
+    Allows to the retrieve the server icon from the Minecraft server and store it in a local storage
+
+.PARAMETER path
+    Specifies the paths, where the server icon from the Minecraft server will be stored in the local storage 
+
+.PARAMETER address
+    Specifies the IP address or hostname of the Minecraft server.
+
+.PARAMETER port
+    Specifies the TCP port number of Minecraft server. 25565 is the default.
+
+.EXAMPLE
+    PS>Get-MCServerIcon -path icon.png -address mc.hypixel.net
+#>
+function Get-MCServerIcon {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullorEmpty()]
+        [string[]]
+        $path,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullorEmpty()]
+        [string]
+        $address,
+
+        [Parameter()]
+        [uint16]
+        $port = 25565
+    )
+
+    Begin {
+        "`nMinecraft server status checker"
+        "https://github.com/Dovias/ps-mc-status/tree/main`n"
+    }
+
+    Process {
+        Log-Information "Attempting to connect with these server details:"
+        Log-Information "Server hostname or IP address: $($address)"
+        Log-Information "Server port: $($port)"
+        try {
+            $status = Get-MCServerStatusData $address $port
+        } catch [System.Net.Sockets.SocketException] {
+            Log-Failure "Failed to establish connection with the server"
+            return
+        } catch {
+            Log-Failure "Failed to communicate with the server. It might be running unsupported, old or newer version of minecraft server software"
+            return
+        }
+        $icon = $status.favicon;
+        if ((-not $icon) -or $icon -eq "") {
+            Log-Failure "Server does not have an icon set"
+            return
+        }
+
+        Log-Success "Successfully connected to the server: "
+        try {
+            $decoded = [System.Convert]::FromBase64String($status.favicon.Substring(22))
+        } catch {
+            Log-Failure "Failed to decode the icon. Server might be running unsupported, old or newer version of minecraft server software"
+            return
+        }
+        Log-Success "Successfully decoded server icon in location: $($path)"
+        Set-Content $path $decoded -Encoding Byte
+    }
+}
+
 <#
 .SYNOPSIS
     Checks the server status of the minecraft server
