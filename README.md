@@ -2,7 +2,7 @@
 ps-mc-status is a PowerShell script, allowing to check the server state of the modern versions of Minecraft servers (Starting from version 1.7)
 
 ## Usage 📝
-Before you start, you need to make sure that you have the PowerShell version ``5.1`` or later installed on machine. If the machine uses Windows 10, PowerShell ``5.1`` should be preinstalled already with the system.<br>
+Before you start, you need to make sure that you have the PowerShell version ``5.1`` or later installed on machine. If the machine uses Windows 10 or later, PowerShell ``5.1`` should be preinstalled already with the system.<br>
 
 This script provides several functions that allow you to retrieve the data from the Minecraft server:<br><br>
 ``Get-MCServerStatus -address <address> [-port <port number>]`` command allows to retrieve the basic server information about the current server state (server software name, version and players)<br>
